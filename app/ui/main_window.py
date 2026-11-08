@@ -3,7 +3,7 @@ from pathlib import Path
 import logging
 from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QSplitter, QGroupBox
+    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QSplitter, QGroupBox, QScrollArea
 )
 
 from app import __version__
@@ -14,6 +14,7 @@ from app.ui.menu_bar import AppMenuBar
 from app.ui.connection_panel import ConnectionPanel
 from app.ui.channel_panel import ChannelPanel
 from app.ui.prediction_panel import PredictionPanel
+from app.ui.axis_panel import AxisPanel
 from app.ui.plot_widget import PlotWidget
 from app.ui.status_bar import AppStatusBar
 
@@ -42,13 +43,23 @@ class MainWindow(QMainWindow):
         self.connection_panel = ConnectionPanel()
         self.channel_panel = ChannelPanel()
         self.prediction_panel = PredictionPanel()
+        self.axis_panel = AxisPanel()
         for title, w in (("接続", self.connection_panel),
                           ("チャネル", self.channel_panel),
-                          ("予測設定", self.prediction_panel)):
+                          ("予測設定", self.prediction_panel),
+                          ("縦軸", self.axis_panel)):
             box = QGroupBox(title); bv = QVBoxLayout(box); bv.addWidget(w)
             left_v.addWidget(box)
         left_v.addStretch()
-        splitter.addWidget(left)
+        # 窓が低いときにチャネル表が潰れないよう、左の列は縦にスクロールさせる
+        self.channel_panel.table.setMinimumHeight(140)
+        left_scroll = QScrollArea()
+        left_scroll.setWidgetResizable(True)
+        left_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        left_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        left_scroll.setWidget(left)
+        left_scroll.setMinimumWidth(left.minimumSizeHint().width() + 20)  # 縦スクロールバーの分
+        splitter.addWidget(left_scroll)
         self.plot_widget = PlotWidget()
         splitter.addWidget(self.plot_widget)
         splitter.setStretchFactor(0, 0)
@@ -75,8 +86,10 @@ class MainWindow(QMainWindow):
         self.prediction_panel.interval_slider.setValue(int(c.predict_interval_sec))
         self.status.set_predict_interval(int(c.predict_interval_sec))
         for ch in c.channels:
-            self.plot_widget.configure_channel(ch.ch, ch.name, ch.color)
+            self.plot_widget.configure_channel(ch.ch, ch.name, ch.color, ch.decimals)
             self.plot_widget.set_visible(ch.ch, ch.visible)
+        self.axis_panel.set_values(c.y_auto, c.y_min, c.y_max, c.y_tick)
+        self.plot_widget.set_y_axis(c.y_auto, c.y_min, c.y_max, c.y_tick)
         if c.window_geometry:
             self.setGeometry(*c.window_geometry)
 
@@ -87,6 +100,7 @@ class MainWindow(QMainWindow):
         self.channel_panel.visibilityChanged.connect(self.plot_widget.set_visible)
         self.channel_panel.predictTargetChanged.connect(self._on_predict_target_changed)
         self.prediction_panel.intervalChanged.connect(self.status.set_predict_interval)
+        self.axis_panel.axisChanged.connect(self._on_axis_changed)
         for sig in (self.prediction_panel.horizonChanged,
                     self.prediction_panel.intervalChanged,
                     self.prediction_panel.inputIntervalChanged,
@@ -150,7 +164,7 @@ class MainWindow(QMainWindow):
         self._cfg.channels = self.channel_panel.get_channels()
         self._cfg.save(CONFIG_PATH)
         for ch in self._cfg.channels:
-            self.plot_widget.configure_channel(ch.ch, ch.name, ch.color)
+            self.plot_widget.configure_channel(ch.ch, ch.name, ch.color, ch.decimals)
             self.plot_widget.set_visible(ch.ch, ch.visible)
         self._modbus = ModbusClient(
             host=host, port=port, unit_id=unit,
@@ -226,13 +240,19 @@ class MainWindow(QMainWindow):
         existing = set()
         for ch in chs:
             existing.add(ch.ch)
-            self.plot_widget.configure_channel(ch.ch, ch.name, ch.color)
+            self.plot_widget.configure_channel(ch.ch, ch.name, ch.color, ch.decimals)
             self.plot_widget.set_visible(ch.ch, ch.visible)
         for ch in list(self.plot_widget._actual.keys()):
             if ch not in existing:
                 self.plot_widget.remove_channel(ch)
         self._cfg.channels = chs
         self._cfg.save(CONFIG_PATH)
+
+    def _on_axis_changed(self, auto: bool, y_min: float, y_max: float, tick: float) -> None:
+        self.plot_widget.set_y_axis(auto, y_min, y_max, tick)
+        c = self._cfg
+        c.y_auto, c.y_min, c.y_max, c.y_tick = auto, y_min, y_max, tick
+        c.save(CONFIG_PATH)
 
     def closeEvent(self, e) -> None:
         if self._modbus: self._modbus.stop()

@@ -20,6 +20,7 @@ else:
     _base_dir = Path(__file__).resolve().parent.parent
 os.environ.setdefault("HF_HOME", str(_base_dir / "models"))
 
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QApplication
 from app.logger import setup_logging
 from app.ui.main_window import MainWindow
@@ -27,7 +28,14 @@ from app.ui.main_window import MainWindow
 
 def main() -> int:
     setup_logging(Path.home() / ".modbus-timesfm-viewer" / "logs")
+    if sys.platform == "win32":
+        # 独自の ID を付けないと、タスクバーに python のアイコンが出ることがある
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Nagasaki-Software.modbus-timesfm-viewer")
     app = QApplication(sys.argv)
+    # EXE では同梱物の展開先（_MEIPASS）に app/assets が入る
+    assets = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent)) / "app" / "assets"
+    app.setWindowIcon(QIcon(str(assets / "icon.ico")))
     win = MainWindow()
     win.show()
     return app.exec()

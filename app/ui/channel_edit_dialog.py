@@ -17,6 +17,7 @@ class ChannelEditDialog(QDialog):
         self.addr_spin = QSpinBox(); self.addr_spin.setRange(0, 65535)
         self.dtype = QComboBox(); self.dtype.addItems(["float32", "int16", "int32"])
         self.order = QComboBox(); self.order.addItems(["ABCD", "CDAB", "BADC", "DCBA"])
+        self.decimals_spin = QSpinBox(); self.decimals_spin.setRange(0, 6); self.decimals_spin.setValue(2)
         self._color = "#1f77b4"
         self.color_btn = QPushButton("色を選ぶ")
         self.color_btn.clicked.connect(self._pick_color)
@@ -27,6 +28,7 @@ class ChannelEditDialog(QDialog):
         form.addRow("データ型:", self.dtype)
         form.addRow("バイト順:", self.order)
         form.addRow("表示色:", self.color_btn)
+        form.addRow("小数の桁数:", self.decimals_spin)
         btns = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         btns.accepted.connect(self.accept)
@@ -40,6 +42,7 @@ class ChannelEditDialog(QDialog):
             self.order.setCurrentText(channel.byte_order)
             self._color = channel.color
             self._update_color_btn()
+            self.decimals_spin.setValue(channel.decimals)
 
     def _pick_color(self) -> None:
         c = QColorDialog.getColor(QColor(self._color), self)
@@ -60,4 +63,5 @@ class ChannelEditDialog(QDialog):
             color=self._color,
             visible=visible,
             predict_target=predict_target,
+            decimals=self.decimals_spin.value(),
         )

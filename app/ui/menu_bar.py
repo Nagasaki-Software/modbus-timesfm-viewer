@@ -9,9 +9,6 @@ class AppMenuBar(QMenuBar):
     def __init__(self, parent=None, now_provider: Callable[[], datetime] = datetime.now):
         super().__init__(parent)
         self._now = now_provider
-        self.addMenu("ファイル(&F)")
-        self.addMenu("表示(&V)")
-        self.addMenu("ヘルプ(&H)")
         self.clock_label = QLabel("")
         self.clock_label.setContentsMargins(0, 0, 12, 0)
         self.setCornerWidget(self.clock_label, Qt.Corner.TopRightCorner)

@@ -18,6 +18,7 @@ class ChannelConfig:
     color: str       # "#rrggbb"
     visible: bool
     predict_target: bool
+    decimals: int = 2  # グラフ下段に出す値の小数桁数
 
 
 @dataclass
@@ -30,6 +31,10 @@ class Config:
     horizon_sec: int = 60
     predict_interval_sec: float = 5.0
     predict_input_interval_sec: float = 1.0  # TimesFM 入力周期（秒）。poll_interval_sec 以上であること
+    y_auto: bool = True  # 縦軸をデータに合わせて自動で広げる
+    y_min: float = 0.0
+    y_max: float = 100.0
+    y_tick: float = 10.0  # 目盛りの間隔
     window_geometry: list[int] = field(default_factory=lambda: [100, 100, 1200, 800])
 
     @classmethod

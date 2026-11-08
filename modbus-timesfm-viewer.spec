@@ -4,6 +4,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 datas = []
 datas += collect_data_files("timesfm")
 datas += collect_data_files("pymodbus")
+datas += [("app/assets/icon.ico", "app/assets")]
 hiddenimports = collect_submodules("timesfm") + collect_submodules("pymodbus")
 
 a = Analysis(
@@ -25,4 +26,5 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,
+    icon="app/assets/icon.ico",
 )
