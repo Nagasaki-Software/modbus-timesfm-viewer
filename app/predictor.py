@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import threading
 import time
 import logging
@@ -38,8 +39,17 @@ class TimesFM25Backend:
             import timesfm
             # torch_compile=True は Windows で C++ コンパイラが無いと失敗するため無効化
             self._model = timesfm.TimesFM_2p5_200M_torch.from_pretrained(
-                "google/timesfm-2.5-200m-pytorch", torch_compile=False
+                self.model_source(), torch_compile=False
             )
+
+    @staticmethod
+    def model_source() -> str:
+        """ネットに出られない PC 向けに、models フォルダ直下に手で置いた
+        model.safetensors があればそれを読む。無ければ Hugging Face から取得する。"""
+        models_dir = os.environ.get("HF_HOME")
+        if models_dir and os.path.isfile(os.path.join(models_dir, "model.safetensors")):
+            return models_dir
+        return "google/timesfm-2.5-200m-pytorch"
 
     def predict(self, series: np.ndarray, horizon: int) -> np.ndarray:
         self.load()

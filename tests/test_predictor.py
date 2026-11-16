@@ -155,3 +155,11 @@ def test_predictor_works_with_long_input_interval_and_big_buffer():
     p.stop()
     assert len(results) >= 1
     assert results[-1].horizon_values.shape == (10,)
+
+
+def test_model_source_uses_file_placed_in_models(tmp_path, monkeypatch):
+    from app.predictor import TimesFM25Backend
+    monkeypatch.setenv("HF_HOME", str(tmp_path))
+    assert TimesFM25Backend.model_source() == "google/timesfm-2.5-200m-pytorch"
+    (tmp_path / "model.safetensors").write_bytes(b"x")
+    assert TimesFM25Backend.model_source() == str(tmp_path)
