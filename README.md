@@ -70,7 +70,7 @@ QT_QPA_PLATFORM=offscreen .venv/Scripts/python.exe -m pytest
 .venv/Scripts/python.exe -m PyInstaller modbus-timesfm-viewer.spec --clean --noconfirm
 ```
 
-`dist/modbus-timesfm-viewer.exe` が作成されます。配布するときは、同じ場所に空の `models` フォルダを置いてください。
+`dist/modbus-timesfm-viewer.exe` が作成されます。配布するときは、同じ場所に `models` フォルダを置いてください。配布 zip に入れる説明書きは `docs/release/` にあります（`モデルのダウンロード方法.txt` は `models` フォルダの中に入れます）。
 
 ## ライセンス
 
